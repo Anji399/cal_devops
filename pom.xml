@@ -29,9 +29,9 @@
   
   <distributionManagement>
    <snapshotRepository>
-    <id>calculator</id>
-    <name>calculator</name>
-    <url>http://localhost:8081/repository/calculator/</url>
+    <id>cal_dev</id>
+    <name>cal_dev</name>
+    <url>http://localhost:8081/repository/cal_dev/</url>
    </snapshotRepository>
   </distributionManagement>
 
