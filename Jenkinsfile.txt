@@ -1,36 +1,37 @@
 pipeline {
   agent any
-  stages 
+  stages
     {
-    stage('Clean') {
+    stage('Git checkout') {
       steps {
-        bat 'mvn clean'
+        git changelog: false, poll: false, url: 'https://github.com/Anji399/canara.git' 
       }
     }
-    stage('Compile') {
+    stage('Package') {
       steps {
-        bat 'mvn compile'
+        sh 'mvn package'
       }
     }
-    stage('Test') {
+    stage('Build docker image') {
       steps {
-        bat 'mvn test'
-      }
+        sh 'docker build -t mvpar/canara:1.0.0 .'  
+      }    
     }
-    stage('Install') {
+    stage('Push docker image') {
       steps {
-        bat 'mvn install'
-      }
+       withCredentials([string(credentialsId: 'dockpw', variable: 'dockhubpw')]) {
+        sh "docker login -u mvpar -p ${dockhubpw}"
+       }  
+        sh 'docker push mvpar/canara:1.0.0'
+      }    
     }
-	stage('Deploy') {
-	  steps {
-		bat 'mvn deploy'
-	  }
-	}
-	stage('nexus') {
-	  steps {
-		nexusArtifactUploader artifacts: [[artifactId: 'devop_calculator', classifier: '', file: 'target/devop_calculator-1.1-SNAPSHOT.jar', type: 'jar']], credentialsId: 'nexus', groupId: 'calculator', nexusUrl: 'localhost:8081', nexusVersion: 'nexus3', protocol: 'http', repository: 'cal_dev', version: '1.1-SNAPSHOT'
-	  }
-	}
-  }
+    stage('Deploy docker-app on host') {
+      steps {
+        sshagent(['dock']) {
+         sh 'ssh -o StrictHostKeyChecking=no ubuntu@172.31.7.20'
+         sh 'ssh -o StrictHostKeyChecking=no ubuntu@172.31.7.20 docker run -d -p 8081:8080 --name mpr mvpar/canara:1.0.0'
+        }
+      }    
+    }
+  }    
 }
